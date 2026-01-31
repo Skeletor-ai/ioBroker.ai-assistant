@@ -40,6 +40,11 @@
   "anthropicModelHelp": "Claude model name (e.g. claude-sonnet-4-20250514)",
   "maxContextTokens": "Max Context Tokens",
   "maxContextTokensHelp": "Maximum number of tokens for context (system prompt + ioBroker states)",
+  "headerToolCalling": "Tool Calling",
+  "toolCallingEnabled": "Enable Tool Calling",
+  "toolCallingEnabledHelp": "Instead of parsing JSON from LLM responses, use structured tool calls (function calling). More reliable, but requires a model with tool support (e.g. llama3, gpt-4o, claude).",
+  "maxToolRounds": "Max Tool Rounds",
+  "maxToolRoundsHelp": "Maximum number of tool call rounds per request (safety limit)",
   "testLlm": "Test LLM Connection",
 
   "headerTemplates": "Template Configuration",

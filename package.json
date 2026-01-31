@@ -1,6 +1,6 @@
 {
   "name": "iobroker.ai-assistant",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Local AI voice assistant with Whisper transcription and LLM integration",
   "author": {
     "name": "Clawdbot",

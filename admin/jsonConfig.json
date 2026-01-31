@@ -183,6 +183,31 @@
           "default": 4000,
           "sm": 6
         },
+        "_dividerToolCalling": {
+          "type": "divider"
+        },
+        "_headerToolCalling": {
+          "type": "header",
+          "text": "headerToolCalling",
+          "size": 4
+        },
+        "toolCallingEnabled": {
+          "type": "checkbox",
+          "label": "toolCallingEnabled",
+          "help": "toolCallingEnabledHelp",
+          "default": false,
+          "sm": 12
+        },
+        "maxToolRounds": {
+          "type": "number",
+          "label": "maxToolRounds",
+          "help": "maxToolRoundsHelp",
+          "min": 1,
+          "max": 20,
+          "default": 5,
+          "hidden": "!data.toolCallingEnabled",
+          "sm": 6
+        },
         "_testLlm": {
           "type": "sendTo",
           "label": "testLlm",

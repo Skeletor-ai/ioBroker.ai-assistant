@@ -165,11 +165,13 @@ class AiAssistant extends utils.Adapter {
      * @returns {Promise<object>}
      */
     async _processText(userText) {
+        const cfg = this.config || {};
+
         // Step 2: Match template
         const template = this.templateEngine.matchTemplate(userText);
 
         if (!template) {
-            // No template matched — use generic response
+            // No template matched — use generic response (tool calling not needed here)
             const response = await this.llm.complete(
                 'Du bist ein Smart-Home-Assistent. Antworte kurz und hilfreich auf Deutsch.',
                 userText,
@@ -184,7 +186,46 @@ class AiAssistant extends utils.Adapter {
         // Step 3: Build context-enriched prompt
         const systemPrompt = await this.templateEngine.buildSystemPrompt(template);
 
-        // Step 4: LLM completion
+        // ── Tool Calling Mode ────────────────────────────────────────
+        if (cfg.toolCallingEnabled && template.allowedActions?.length > 0) {
+            this.log.info('Using tool calling mode');
+
+            const tools = this.actionExecutor.buildToolDefinitions(template);
+            const toolExecutor = this.actionExecutor.createToolExecutor(template);
+
+            const response = await this.llm.completeWithTools(
+                systemPrompt,
+                userText,
+                tools,
+                toolExecutor,
+                { maxTokens: cfg.maxContextTokens || 1000, maxToolRounds: cfg.maxToolRounds || 5 },
+            );
+
+            this.log.info(`LLM response (tools): "${response.text.substring(0, 100)}..."`);
+            this.log.info(`Tool calls: ${response.toolCalls?.length || 0}`);
+
+            if (toolExecutor._executed.length > 0) {
+                this.log.info(`Executed ${toolExecutor._executed.length} action(s) via tool calling`);
+            }
+            if (toolExecutor._denied.length > 0) {
+                this.log.warn(`Denied ${toolExecutor._denied.length} action(s) via tool calling`);
+            }
+
+            await this.setStateAsync('lastResponse', response.text, true);
+
+            return {
+                step: 'template-tools',
+                template: template.id,
+                response: response.text,
+                toolCalls: response.toolCalls || [],
+                actions: {
+                    executed: toolExecutor._executed,
+                    denied: toolExecutor._denied,
+                },
+            };
+        }
+
+        // ── Legacy Mode (JSON parsing) ──────────────────────────────
         const response = await this.llm.complete(systemPrompt, userText);
         this.log.info(`LLM response: "${response.text.substring(0, 100)}..."`);
 
