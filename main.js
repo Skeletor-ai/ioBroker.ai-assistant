@@ -6,6 +6,7 @@ const LlmBackend = require('./lib/llmBackend');
 const TemplateEngine = require('./lib/templateEngine');
 const ActionExecutor = require('./lib/actionExecutor');
 const AudioServer = require('./lib/audioServer');
+const TtsEngine = require('./lib/ttsEngine');
 
 class AiAssistant extends utils.Adapter {
     constructor(options = {}) {
@@ -16,6 +17,7 @@ class AiAssistant extends utils.Adapter {
         this.templateEngine = null;
         this.actionExecutor = null;
         this.audioServer = null;
+        this.tts = null;
 
         this.on('ready', this.onReady.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
@@ -64,6 +66,21 @@ class AiAssistant extends utils.Adapter {
             adapter: this,
             templateEngine: this.templateEngine,
         });
+
+        // ── TTS Engine ───────────────────────────────────────────────
+        if (cfg.ttsEnabled) {
+            this.tts = new TtsEngine({
+                log: this.log,
+                backend: cfg.ttsBackend || 'piper',
+                config: cfg,
+            });
+
+            const ttsOk = await this.tts.init();
+            await this.setStateAsync('info.ttsAvailable', ttsOk, true);
+            this.log.info(`TTS engine: ${cfg.ttsBackend} (${ttsOk ? 'available' : 'not found'})`);
+        } else {
+            await this.setStateAsync('info.ttsAvailable', false, true);
+        }
 
         // ── Audio Server ─────────────────────────────────────────────
         const audioPort = cfg.audioPort || 8089;
@@ -126,6 +143,18 @@ class AiAssistant extends utils.Adapter {
         result.transcription = transcription.text;
         result.device = deviceId;
         result.processingTimeMs = Date.now() - startTime;
+
+        // TTS: synthesize response text if enabled
+        if (this.tts && this.tts.available && result.response) {
+            try {
+                const ttsResult = await this.tts.synthesize(result.response);
+                result.audioBase64 = ttsResult.audioBuffer.toString('base64');
+                result.audioFormat = ttsResult.format;
+                result.audioSampleRate = ttsResult.sampleRate;
+            } catch (e) {
+                this.log.warn(`TTS synthesis failed: ${e.message}`);
+            }
+        }
 
         return result;
     }
@@ -257,6 +286,7 @@ class AiAssistant extends utils.Adapter {
             'lastResponse': { type: 'string', role: 'text', name: 'Last LLM response', write: false, def: '' },
             'lastTemplate': { type: 'string', role: 'text', name: 'Last matched template ID', write: false, def: '' },
             'lastDevice': { type: 'string', role: 'text', name: 'Last audio device ID', write: false, def: '' },
+            'info.ttsAvailable': { type: 'boolean', role: 'indicator', name: 'TTS engine available', write: false },
         };
 
         for (const [id, common] of Object.entries(states)) {

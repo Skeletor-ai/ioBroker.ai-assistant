@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ai-assistant",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "title": "AI Assistant",
     "titleLang": {
       "en": "AI Assistant (Voice + LLM)",
@@ -47,6 +47,10 @@
     "anthropicApiKey": "",
     "anthropicModel": "claude-sonnet-4-20250514",
     "maxContextTokens": 4000,
+    "ttsEnabled": false,
+    "ttsBackend": "piper",
+    "piperModel": "de_DE-thorsten-high",
+    "edgeTtsVoice": "de-DE-ConradNeural",
     "templates": []
   },
   "objects": [],

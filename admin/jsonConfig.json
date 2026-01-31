@@ -1,0 +1,287 @@
+{
+  "i18n": true,
+  "type": "tabs",
+  "items": {
+    "tabGeneral": {
+      "type": "panel",
+      "label": "tabGeneral",
+      "items": {
+        "_headerGeneral": {
+          "type": "header",
+          "text": "headerGeneral",
+          "size": 3
+        },
+        "audioPort": {
+          "type": "number",
+          "label": "audioPort",
+          "help": "audioPortHelp",
+          "min": 1024,
+          "max": 65535,
+          "default": 8089,
+          "sm": 6
+        },
+        "whisperModel": {
+          "type": "select",
+          "label": "whisperModel",
+          "help": "whisperModelHelp",
+          "options": [
+            { "label": "Tiny (~1 GB RAM)", "value": "tiny" },
+            { "label": "Base (~1.5 GB RAM)", "value": "base" },
+            { "label": "Small (~2.5 GB RAM)", "value": "small" },
+            { "label": "Medium (~5 GB RAM)", "value": "medium" },
+            { "label": "Large (~10 GB RAM)", "value": "large" }
+          ],
+          "default": "base",
+          "sm": 6
+        },
+        "whisperLanguage": {
+          "type": "text",
+          "label": "whisperLanguage",
+          "help": "whisperLanguageHelp",
+          "default": "de",
+          "sm": 6
+        },
+        "_dividerTts": {
+          "type": "divider"
+        },
+        "_headerTts": {
+          "type": "header",
+          "text": "headerTts",
+          "size": 3
+        },
+        "ttsEnabled": {
+          "type": "checkbox",
+          "label": "ttsEnabled",
+          "help": "ttsEnabledHelp",
+          "default": false,
+          "sm": 12
+        },
+        "ttsBackend": {
+          "type": "select",
+          "label": "ttsBackend",
+          "help": "ttsBackendHelp",
+          "options": [
+            { "label": "Piper (lokal)", "value": "piper" },
+            { "label": "Edge-TTS (online, kostenlos)", "value": "edge-tts" }
+          ],
+          "default": "piper",
+          "hidden": "!data.ttsEnabled",
+          "sm": 6
+        },
+        "piperModel": {
+          "type": "text",
+          "label": "piperModel",
+          "help": "piperModelHelp",
+          "default": "de_DE-thorsten-high",
+          "hidden": "!data.ttsEnabled || data.ttsBackend !== 'piper'",
+          "sm": 6
+        },
+        "edgeTtsVoice": {
+          "type": "text",
+          "label": "edgeTtsVoice",
+          "help": "edgeTtsVoiceHelp",
+          "default": "de-DE-ConradNeural",
+          "hidden": "!data.ttsEnabled || data.ttsBackend !== 'edge-tts'",
+          "sm": 6
+        },
+        "_testWhisper": {
+          "type": "sendTo",
+          "label": "testWhisper",
+          "command": "testWhisper",
+          "variant": "outlined",
+          "icon": "mic",
+          "jsonData": "{}",
+          "sm": 6
+        }
+      }
+    },
+    "tabLlm": {
+      "type": "panel",
+      "label": "tabLlm",
+      "items": {
+        "_headerLlm": {
+          "type": "header",
+          "text": "headerLlm",
+          "size": 3
+        },
+        "llmBackend": {
+          "type": "select",
+          "label": "llmBackend",
+          "help": "llmBackendHelp",
+          "options": [
+            { "label": "Ollama (lokal)", "value": "ollama" },
+            { "label": "OpenAI", "value": "openai" },
+            { "label": "Anthropic (Claude)", "value": "anthropic" }
+          ],
+          "default": "ollama",
+          "sm": 6
+        },
+        "_dividerOllama": {
+          "type": "divider",
+          "hidden": "data.llmBackend !== 'ollama'"
+        },
+        "ollamaUrl": {
+          "type": "text",
+          "label": "ollamaUrl",
+          "help": "ollamaUrlHelp",
+          "default": "http://localhost:11434",
+          "hidden": "data.llmBackend !== 'ollama'",
+          "sm": 6
+        },
+        "ollamaModel": {
+          "type": "text",
+          "label": "ollamaModel",
+          "help": "ollamaModelHelp",
+          "default": "phi3:mini",
+          "hidden": "data.llmBackend !== 'ollama'",
+          "sm": 6
+        },
+        "_dividerOpenai": {
+          "type": "divider",
+          "hidden": "data.llmBackend !== 'openai'"
+        },
+        "openaiApiKey": {
+          "type": "password",
+          "label": "openaiApiKey",
+          "help": "openaiApiKeyHelp",
+          "hidden": "data.llmBackend !== 'openai'",
+          "sm": 6
+        },
+        "openaiModel": {
+          "type": "text",
+          "label": "openaiModel",
+          "help": "openaiModelHelp",
+          "default": "gpt-4o-mini",
+          "hidden": "data.llmBackend !== 'openai'",
+          "sm": 6
+        },
+        "_dividerAnthropic": {
+          "type": "divider",
+          "hidden": "data.llmBackend !== 'anthropic'"
+        },
+        "anthropicApiKey": {
+          "type": "password",
+          "label": "anthropicApiKey",
+          "help": "anthropicApiKeyHelp",
+          "hidden": "data.llmBackend !== 'anthropic'",
+          "sm": 6
+        },
+        "anthropicModel": {
+          "type": "text",
+          "label": "anthropicModel",
+          "help": "anthropicModelHelp",
+          "default": "claude-sonnet-4-20250514",
+          "hidden": "data.llmBackend !== 'anthropic'",
+          "sm": 6
+        },
+        "maxContextTokens": {
+          "type": "number",
+          "label": "maxContextTokens",
+          "help": "maxContextTokensHelp",
+          "min": 500,
+          "max": 128000,
+          "default": 4000,
+          "sm": 6
+        },
+        "_testLlm": {
+          "type": "sendTo",
+          "label": "testLlm",
+          "command": "testLlm",
+          "variant": "outlined",
+          "icon": "cloud",
+          "jsonData": "{}",
+          "sm": 6
+        }
+      }
+    },
+    "tabTemplates": {
+      "type": "panel",
+      "label": "tabTemplates",
+      "items": {
+        "_headerTemplates": {
+          "type": "header",
+          "text": "headerTemplates",
+          "size": 3
+        },
+        "_templateInfo": {
+          "type": "staticText",
+          "text": "templateInfo",
+          "sm": 12
+        },
+        "templates": {
+          "type": "table",
+          "label": "templates",
+          "items": [
+            {
+              "type": "text",
+              "attr": "id",
+              "title": "templateId",
+              "width": "10%",
+              "filter": false,
+              "sort": true,
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "name",
+              "title": "templateName",
+              "width": "15%",
+              "filter": false,
+              "sort": true,
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "triggerWords",
+              "title": "templateTriggerWords",
+              "width": "15%",
+              "filter": false,
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "systemPrompt",
+              "title": "templateSystemPrompt",
+              "width": "25%",
+              "filter": false,
+              "default": ""
+            },
+            {
+              "type": "select",
+              "attr": "responseFormat",
+              "title": "templateResponseFormat",
+              "width": "10%",
+              "options": [
+                { "label": "Text", "value": "text" },
+                { "label": "JSON", "value": "json" },
+                { "label": "Action", "value": "action" }
+              ],
+              "default": "text"
+            },
+            {
+              "type": "number",
+              "attr": "maxContextStates",
+              "title": "templateMaxContextStates",
+              "width": "10%",
+              "default": 50
+            }
+          ],
+          "sm": 12
+        },
+        "_dividerAdvanced": {
+          "type": "divider"
+        },
+        "_headerAdvanced": {
+          "type": "header",
+          "text": "headerAdvanced",
+          "size": 4
+        },
+        "_advancedInfo": {
+          "type": "staticText",
+          "text": "advancedInfo",
+          "sm": 12
+        }
+      }
+    }
+  }
+}
