@@ -1,0 +1,54 @@
+{
+  "common": {
+    "name": "ai-assistant",
+    "version": "0.1.0",
+    "title": "AI Assistant",
+    "titleLang": {
+      "en": "AI Assistant (Voice + LLM)",
+      "de": "KI-Assistent (Sprache + LLM)"
+    },
+    "desc": {
+      "en": "Local voice assistant with Whisper transcription and LLM integration (Ollama, OpenAI, Anthropic)",
+      "de": "Lokaler Sprachassistent mit Whisper-Transkription und LLM-Anbindung (Ollama, OpenAI, Anthropic)"
+    },
+    "authors": ["Clawdbot <dev@clawdbot.local>"],
+    "keywords": ["AI", "voice", "whisper", "LLM", "ollama", "speech", "transcription"],
+    "license": "MIT",
+    "platform": "Javascript/Node.js",
+    "main": "main.js",
+    "icon": "ai-assistant.png",
+    "enabled": true,
+    "messagebox": true,
+    "loglevel": "info",
+    "mode": "daemon",
+    "type": "general",
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "push",
+    "adminUI": {
+      "config": "json"
+    },
+    "dependencies": [
+      { "js-controller": ">=5.0.0" }
+    ],
+    "globalDependencies": [
+      { "admin": ">=6.0.0" }
+    ]
+  },
+  "native": {
+    "audioPort": 8089,
+    "whisperModel": "base",
+    "whisperLanguage": "de",
+    "llmBackend": "ollama",
+    "ollamaUrl": "http://localhost:11434",
+    "ollamaModel": "phi3:mini",
+    "openaiApiKey": "",
+    "openaiModel": "gpt-4o-mini",
+    "anthropicApiKey": "",
+    "anthropicModel": "claude-sonnet-4-20250514",
+    "maxContextTokens": 4000,
+    "templates": []
+  },
+  "objects": [],
+  "instanceObjects": []
+}

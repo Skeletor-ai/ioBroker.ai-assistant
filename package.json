@@ -1,0 +1,42 @@
+{
+  "name": "iobroker.ai-assistant",
+  "version": "0.1.0",
+  "description": "Local AI voice assistant with Whisper transcription and LLM integration",
+  "author": {
+    "name": "Clawdbot",
+    "email": "dev@clawdbot.local"
+  },
+  "license": "MIT",
+  "main": "main.js",
+  "files": [
+    "admin/",
+    "lib/",
+    "main.js",
+    "io-package.json",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "echo \"No tests yet\"",
+    "dev": "dev-server watch"
+  },
+  "dependencies": {
+    "@iobroker/adapter-core": "^3.0.0"
+  },
+  "devDependencies": {
+    "@iobroker/dev-server": "^0.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "ioBroker",
+    "AI",
+    "voice",
+    "whisper",
+    "LLM",
+    "ollama",
+    "speech",
+    "transcription",
+    "smart home"
+  ]
+}
