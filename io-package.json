@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ai-assistant",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "title": "AI Assistant",
     "titleLang": {
       "en": "AI Assistant (Voice + LLM)",
@@ -42,6 +42,7 @@
     "llmBackend": "ollama",
     "ollamaUrl": "http://localhost:11434",
     "ollamaModel": "phi3:mini",
+    "ollamaToolModel": "",
     "openaiApiKey": "",
     "openaiModel": "gpt-4o-mini",
     "anthropicApiKey": "",

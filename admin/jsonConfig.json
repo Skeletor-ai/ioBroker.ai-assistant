@@ -198,6 +198,14 @@
           "default": false,
           "sm": 12
         },
+        "ollamaToolModel": {
+          "type": "text",
+          "label": "ollamaToolModel",
+          "help": "ollamaToolModelHelp",
+          "default": "",
+          "hidden": "!data.toolCallingEnabled || data.llmBackend !== 'ollama'",
+          "sm": 6
+        },
         "maxToolRounds": {
           "type": "number",
           "label": "maxToolRounds",

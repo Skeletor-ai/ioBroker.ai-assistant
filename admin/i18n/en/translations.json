@@ -43,6 +43,8 @@
   "headerToolCalling": "Tool Calling",
   "toolCallingEnabled": "Enable Tool Calling",
   "toolCallingEnabledHelp": "Instead of parsing JSON from LLM responses, use structured tool calls (function calling). More reliable, but requires a model with tool support (e.g. llama3, gpt-4o, claude).",
+  "ollamaToolModel": "Tool Model (optional)",
+  "ollamaToolModelHelp": "Separate Ollama model for tool calling only (e.g. functiongemma). If empty, the main model handles everything. Useful when a small specialized model should handle function selection.",
   "maxToolRounds": "Max Tool Rounds",
   "maxToolRoundsHelp": "Maximum number of tool call rounds per request (safety limit)",
   "testLlm": "Test LLM Connection",
