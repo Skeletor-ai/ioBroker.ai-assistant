@@ -41,7 +41,7 @@
     "whisperLanguage": "de",
     "llmBackend": "ollama",
     "ollamaUrl": "http://localhost:11434",
-    "ollamaModel": "phi3:mini",
+    "ollamaModel": "qwen3-vl:4b",
     "ollamaToolModel": "",
     "openaiApiKey": "",
     "openaiModel": "gpt-4o-mini",

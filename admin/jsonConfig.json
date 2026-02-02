@@ -132,7 +132,7 @@
           "type": "text",
           "label": "ollamaModel",
           "help": "ollamaModelHelp",
-          "default": "phi3:mini",
+          "default": "qwen3-vl:4b",
           "hidden": "data.llmBackend !== 'ollama'",
           "sm": 6
         },
