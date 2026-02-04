@@ -10,6 +10,7 @@ const ActionExecutor = require('./lib/actionExecutor');
 const AudioServer = require('./lib/audioServer');
 const TtsEngine = require('./lib/ttsEngine');
 const EnumResolver = require('./lib/enumResolver');
+const IntentParser = require('./lib/intentParser');
 
 class AiAssistant extends utils.Adapter {
     constructor(options = {}) {
@@ -21,6 +22,7 @@ class AiAssistant extends utils.Adapter {
         this.ragManager = null;
         this.templateEngine = null;
         this.enumResolver = null;
+        this.intentParser = null;
         this.actionExecutor = null;
         this.audioServer = null;
         this.tts = null;
@@ -112,6 +114,9 @@ class AiAssistant extends utils.Adapter {
         // ── Enum Resolver (rooms & functions) ────────────────────────
         this.enumResolver = new EnumResolver({ log: this.log, adapter: this });
         await this.enumResolver.load();
+
+        // ── Intent Parser (fast-path without LLM) ────────────────────
+        this.intentParser = new IntentParser({ log: this.log, enumResolver: this.enumResolver });
 
         // ── Action Executor ──────────────────────────────────────────
         this.actionExecutor = new ActionExecutor({
@@ -221,8 +226,22 @@ class AiAssistant extends utils.Adapter {
      */
     async _processText(userText) {
         const cfg = this.config || {};
+        const startTime = Date.now();
 
-        // Step 1: Try enum-based resolution (rooms + functions)
+        // Step 0: Fast-path — intent parsing without LLM
+        if (this.intentParser && this.enumResolver.rooms.size > 0) {
+            const intent = this.intentParser.parse(userText);
+            if (intent && intent.confidence >= 0.6 && intent.action !== 'query') {
+                const fastResult = await this._executeFastIntent(intent);
+                if (fastResult) {
+                    fastResult.processingTimeMs = Date.now() - startTime;
+                    this.log.info(`Fast-path: ${intent.action} in ${fastResult.processingTimeMs}ms (no LLM)`);
+                    return fastResult;
+                }
+            }
+        }
+
+        // Step 1: Try enum-based resolution (rooms + functions) — uses LLM
         if (this.enumResolver && this.enumResolver.rooms.size > 0) {
             const enumResult = await this._processWithEnums(userText);
             if (enumResult) return enumResult;
@@ -328,6 +347,134 @@ class AiAssistant extends utils.Adapter {
                 denied: actionResult.denied,
             },
         };
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    //  Fast-path intent execution (no LLM)
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Execute a parsed intent directly without LLM.
+     * @param {object} intent - From IntentParser.parse()
+     * @returns {Promise<object|null>}
+     */
+    async _executeFastIntent(intent) {
+        const executed = [];
+        const denied = [];
+
+        // Get writable states from the resolved set
+        const writableIds = await this.enumResolver.getWritableStates(intent.stateIds);
+        if (writableIds.length === 0) {
+            this.log.debug('Fast-path: no writable states found');
+            return null;
+        }
+
+        for (const stateId of writableIds) {
+            try {
+                const obj = await this.adapter.getForeignObjectAsync(stateId);
+                if (!obj) continue;
+
+                const stateType = obj.common?.type;
+                const role = obj.common?.role || '';
+                let value;
+
+                switch (intent.action) {
+                    case 'set_on':
+                        if (stateType === 'boolean') value = true;
+                        else if (stateType === 'number') {
+                            // Dimmer/level → 100, otherwise 1
+                            value = role.includes('level') || role.includes('dimmer') ? 100 : 1;
+                        }
+                        else value = true;
+                        break;
+
+                    case 'set_off':
+                        if (stateType === 'boolean') value = false;
+                        else if (stateType === 'number') value = 0;
+                        else value = false;
+                        break;
+
+                    case 'set_value':
+                        if (intent.value === null) continue;
+                        value = intent.value;
+                        if (stateType === 'number') value = Number(value);
+                        else if (stateType === 'boolean') value = Boolean(value);
+                        break;
+
+                    case 'increase': {
+                        const current = await this.adapter.getForeignStateAsync(stateId);
+                        if (!current || stateType !== 'number') continue;
+                        const step = role.includes('temperature') ? 1 : 10;
+                        const max = obj.common?.max ?? (role.includes('temperature') ? 30 : 100);
+                        value = Math.min((current.val || 0) + step, max);
+                        break;
+                    }
+
+                    case 'decrease': {
+                        const current = await this.adapter.getForeignStateAsync(stateId);
+                        if (!current || stateType !== 'number') continue;
+                        const step = role.includes('temperature') ? 1 : 10;
+                        const min = obj.common?.min ?? 0;
+                        value = Math.max((current.val || 0) - step, min);
+                        break;
+                    }
+
+                    default:
+                        continue;
+                }
+
+                if (value === undefined) continue;
+
+                await this.adapter.setForeignStateAsync(stateId, { val: value, ack: false });
+                const name = this.enumResolver._getName(obj);
+                this.log.info(`Fast-path executed: ${stateId} = ${value}`);
+                executed.push({ stateId, name, value });
+            } catch (e) {
+                this.log.warn(`Fast-path error: ${stateId}: ${e.message}`);
+                denied.push({ stateId, reason: e.message });
+            }
+        }
+
+        if (executed.length === 0) return null;
+
+        // Build human-readable response
+        const response = this._buildFastResponse(intent, executed);
+        await this.setStateAsync('lastResponse', response, true);
+
+        return {
+            step: 'fast-path',
+            action: intent.action,
+            room: intent.room,
+            function: intent.function,
+            confidence: intent.confidence,
+            response,
+            actions: { executed, denied },
+        };
+    }
+
+    /**
+     * Build a short human-readable response for fast-path actions.
+     */
+    _buildFastResponse(intent, executed) {
+        if (executed.length === 0) return 'Keine Aktion ausgeführt.';
+
+        const names = executed.map((e) => e.name).join(', ');
+        const location = intent.room ? ` im ${intent.room}` : '';
+
+        switch (intent.action) {
+            case 'set_on':
+                return `${names}${location} eingeschaltet.`;
+            case 'set_off':
+                return `${names}${location} ausgeschaltet.`;
+            case 'set_value':
+                return `${names}${location} auf ${intent.value}${intent.unit === 'percent' ? '%' : intent.unit === 'degree' ? '°' : ''} gesetzt.`;
+            case 'increase':
+                return `${names}${location} erhöht (${executed.map((e) => e.value).join(', ')}).`;
+            case 'decrease':
+                return `${names}${location} reduziert (${executed.map((e) => e.value).join(', ')}).`;
+            default:
+                return `${executed.length} Aktion(en) ausgeführt.`;
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────
