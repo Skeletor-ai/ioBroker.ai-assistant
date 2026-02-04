@@ -1,0 +1,6 @@
+sentence-transformers
+chromadb
+fastapi
+uvicorn[standard]
+tiktoken
+gitpython

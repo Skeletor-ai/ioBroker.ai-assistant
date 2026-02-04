@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "ai-assistant",
-    "version": "0.3.1",
+    "version": "0.4.0",
     "title": "AI Assistant",
     "titleLang": {
       "en": "AI Assistant (Voice + LLM)",
@@ -50,6 +50,13 @@
     "maxContextTokens": 4000,
     "toolCallingEnabled": false,
     "maxToolRounds": 5,
+    "ragEnabled": true,
+    "ragManaged": true,
+    "ragUrl": "http://127.0.0.1:8321",
+    "ragPort": 8321,
+    "ragTopK": 5,
+    "ragLanguage": "",
+    "ragTimeoutMs": 5000,
     "ttsEnabled": false,
     "ttsBackend": "piper",
     "piperModel": "de_DE-thorsten-high",

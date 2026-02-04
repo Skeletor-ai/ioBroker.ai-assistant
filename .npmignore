@@ -1,0 +1,11 @@
+# Development
+.dev-server/
+test/
+.github/
+.vscode/
+*.tgz
+
+# RAG runtime data (created automatically on first run)
+rag/venv/
+rag/data/
+rag/__pycache__/
