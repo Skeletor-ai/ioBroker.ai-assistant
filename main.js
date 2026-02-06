@@ -109,7 +109,7 @@ class AiAssistant extends utils.Adapter {
 
         // ── Template Engine ──────────────────────────────────────────
         this.templateEngine = new TemplateEngine({ log: this.log, adapter: this });
-        this.templateEngine.loadTemplates(cfg.templates || []);
+        this.templateEngine.loadTemplates(this._parseTemplates(cfg.templates || []));
 
         // ── Enum Resolver (rooms & functions) ────────────────────────
         this.enumResolver = new EnumResolver({ log: this.log, adapter: this });
@@ -117,6 +117,16 @@ class AiAssistant extends utils.Adapter {
 
         // ── Intent Parser (fast-path without LLM) ────────────────────
         this.intentParser = new IntentParser({ log: this.log, enumResolver: this.enumResolver });
+
+        // ── Subscribe to enum changes for auto-reload ────────────────
+        await this.subscribeForeignObjectsAsync('enum.rooms.*');
+        await this.subscribeForeignObjectsAsync('enum.functions.*');
+        this.on('objectChange', async (id) => {
+            if (id.startsWith('enum.rooms.') || id.startsWith('enum.functions.')) {
+                this.log.info(`Enum changed: ${id} — reloading enums`);
+                await this.enumResolver.load();
+            }
+        });
 
         // ── Action Executor ──────────────────────────────────────────
         this.actionExecutor = new ActionExecutor({
@@ -229,14 +239,19 @@ class AiAssistant extends utils.Adapter {
         const startTime = Date.now();
 
         // Step 0: Fast-path — intent parsing without LLM
-        if (this.intentParser && this.enumResolver.rooms.size > 0) {
-            const intent = this.intentParser.parse(userText);
+        if (this.intentParser) {
+            const intent = await this.intentParser.parse(userText);
             if (intent && intent.confidence >= 0.6 && intent.action !== 'query') {
-                const fastResult = await this._executeFastIntent(intent);
-                if (fastResult) {
-                    fastResult.processingTimeMs = Date.now() - startTime;
-                    this.log.info(`Fast-path: ${intent.action} in ${fastResult.processingTimeMs}ms (no LLM)`);
-                    return fastResult;
+                this.log.info(`Intent parsed: ${intent.action} room="${intent.room || ''}" function="${intent.function || ''}" device="${intent.deviceName || ''}" confidence=${intent.confidence}`);
+                if (this.enumResolver && this.enumResolver.rooms.size > 0) {
+                    const fastResult = await this._executeFastIntent(intent);
+                    if (fastResult) {
+                        fastResult.processingTimeMs = Date.now() - startTime;
+                        this.log.info(`Fast-path: ${intent.action} in ${fastResult.processingTimeMs}ms (no LLM)`);
+                        return fastResult;
+                    }
+                } else {
+                    this.log.debug('Fast-path: intent erkannt aber keine Enums geladen — fällt durch zu LLM');
                 }
             }
         }
@@ -371,7 +386,7 @@ class AiAssistant extends utils.Adapter {
 
         for (const stateId of writableIds) {
             try {
-                const obj = await this.adapter.getForeignObjectAsync(stateId);
+                const obj = await this.getForeignObjectAsync(stateId);
                 if (!obj) continue;
 
                 const stateType = obj.common?.type;
@@ -402,7 +417,7 @@ class AiAssistant extends utils.Adapter {
                         break;
 
                     case 'increase': {
-                        const current = await this.adapter.getForeignStateAsync(stateId);
+                        const current = await this.getForeignStateAsync(stateId);
                         if (!current || stateType !== 'number') continue;
                         const step = role.includes('temperature') ? 1 : 10;
                         const max = obj.common?.max ?? (role.includes('temperature') ? 30 : 100);
@@ -411,7 +426,7 @@ class AiAssistant extends utils.Adapter {
                     }
 
                     case 'decrease': {
-                        const current = await this.adapter.getForeignStateAsync(stateId);
+                        const current = await this.getForeignStateAsync(stateId);
                         if (!current || stateType !== 'number') continue;
                         const step = role.includes('temperature') ? 1 : 10;
                         const min = obj.common?.min ?? 0;
@@ -425,7 +440,7 @@ class AiAssistant extends utils.Adapter {
 
                 if (value === undefined) continue;
 
-                await this.adapter.setForeignStateAsync(stateId, { val: value, ack: false });
+                await this.setForeignStateAsync(stateId, { val: value, ack: false });
                 const name = this.enumResolver._getName(obj);
                 this.log.info(`Fast-path executed: ${stateId} = ${value}`);
                 executed.push({ stateId, name, value });
@@ -656,7 +671,7 @@ ${stateContext}
             }
 
             try {
-                const obj = await this.adapter.getForeignObjectAsync(action.stateId);
+                const obj = await this.getForeignObjectAsync(action.stateId);
                 if (!obj) {
                     denied.push({ ...action, reason: 'State not found' });
                     continue;
@@ -668,7 +683,7 @@ ${stateContext}
                 else if (stateType === 'boolean') value = Boolean(value);
                 else if (stateType === 'string') value = String(value);
 
-                await this.adapter.setForeignStateAsync(action.stateId, { val: value, ack: false });
+                await this.setForeignStateAsync(action.stateId, { val: value, ack: false });
                 this.log.info(`Enum action executed: ${action.stateId} = ${value}`);
                 executed.push({ ...action, actualValue: value });
             } catch (e) {
@@ -795,6 +810,81 @@ ${stateContext}
                 }
                 break;
             }
+            case 'exportTemplates': {
+                const templates = this.templateEngine ? this.templateEngine.getTemplates() : [];
+                // Serialize contextSources/allowedActions back to objects (they may be stored as JSON strings)
+                const exportData = templates.map((t) => {
+                    const copy = { ...t };
+                    // Ensure arrays are proper objects for export
+                    if (typeof copy.contextSources === 'string') {
+                        try { copy.contextSources = JSON.parse(copy.contextSources); } catch (_) { copy.contextSources = []; }
+                    }
+                    if (typeof copy.allowedActions === 'string') {
+                        try { copy.allowedActions = JSON.parse(copy.allowedActions); } catch (_) { copy.allowedActions = []; }
+                    }
+                    if (typeof copy.triggerWords === 'string') {
+                        copy.triggerWords = copy.triggerWords.split(',').map((w) => w.trim()).filter(Boolean);
+                    }
+                    return copy;
+                });
+                this.sendTo(msg.from, msg.command, {
+                    result: JSON.stringify(exportData, null, 2),
+                }, msg.callback);
+                break;
+            }
+            case 'importTemplates': {
+                try {
+                    const jsonStr = msg.message?.json;
+                    if (!jsonStr || typeof jsonStr !== 'string' || jsonStr.trim().length === 0) {
+                        this.sendTo(msg.from, msg.command, { error: 'Kein JSON eingegeben. Bitte JSON-Array im Textfeld einfügen.' }, msg.callback);
+                        break;
+                    }
+                    const imported = JSON.parse(jsonStr);
+                    if (!Array.isArray(imported)) {
+                        this.sendTo(msg.from, msg.command, { error: 'JSON muss ein Array von Vorlagen sein.' }, msg.callback);
+                        break;
+                    }
+                    // Validate each template
+                    for (const t of imported) {
+                        if (!t.id) {
+                            this.sendTo(msg.from, msg.command, { error: 'Jede Vorlage braucht ein "id" Feld.' }, msg.callback);
+                            return;
+                        }
+                    }
+                    // Serialize complex fields for table storage
+                    const forStorage = imported.map((t) => {
+                        const copy = { ...t };
+                        if (Array.isArray(copy.contextSources)) copy.contextSources = JSON.stringify(copy.contextSources);
+                        if (Array.isArray(copy.allowedActions)) copy.allowedActions = JSON.stringify(copy.allowedActions);
+                        if (Array.isArray(copy.triggerWords)) copy.triggerWords = copy.triggerWords.join(', ');
+                        return copy;
+                    });
+                    // Merge with existing: read current instance config
+                    const obj = await this.getForeignObjectAsync(`system.adapter.${this.namespace}`);
+                    if (!obj?.native) {
+                        this.sendTo(msg.from, msg.command, { error: 'Instanz-Konfiguration nicht gefunden.' }, msg.callback);
+                        break;
+                    }
+                    const existing = obj.native.templates || [];
+                    const merged = [...existing];
+                    for (const t of forStorage) {
+                        const idx = merged.findIndex((e) => e.id === t.id);
+                        if (idx >= 0) merged[idx] = t;
+                        else merged.push(t);
+                    }
+                    obj.native.templates = merged;
+                    await this.setForeignObjectAsync(`system.adapter.${this.namespace}`, obj);
+                    // Reload templates in engine
+                    this.templateEngine.loadTemplates(this._parseTemplates(merged));
+                    this.sendTo(msg.from, msg.command, {
+                        result: `${imported.length} Vorlage(n) importiert. Gesamt: ${merged.length}.`,
+                        reloadBrowser: true,
+                    }, msg.callback);
+                } catch (e) {
+                    this.sendTo(msg.from, msg.command, { error: `Import fehlgeschlagen: ${e.message}` }, msg.callback);
+                }
+                break;
+            }
             default:
                 if (msg.callback) {
                     this.sendTo(msg.from, msg.command, { error: 'Unknown command' }, msg.callback);
@@ -805,6 +895,41 @@ ${stateContext}
     // ─────────────────────────────────────────────────────────────────
     //  Helpers
     // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Parse templates from config table format → engine format.
+     * Handles JSON strings for contextSources/allowedActions and
+     * comma-separated strings for triggerWords.
+     */
+    _parseTemplates(rawTemplates) {
+        return rawTemplates.map((t) => {
+            const copy = { ...t };
+            // Parse contextSources from JSON string
+            if (typeof copy.contextSources === 'string' && copy.contextSources.trim()) {
+                try { copy.contextSources = JSON.parse(copy.contextSources); }
+                catch (_) { this.log.warn(`Template "${copy.id}": contextSources is not valid JSON`); copy.contextSources = []; }
+            }
+            if (!Array.isArray(copy.contextSources)) copy.contextSources = [];
+
+            // Parse allowedActions from JSON string
+            if (typeof copy.allowedActions === 'string' && copy.allowedActions.trim()) {
+                try { copy.allowedActions = JSON.parse(copy.allowedActions); }
+                catch (_) { this.log.warn(`Template "${copy.id}": allowedActions is not valid JSON`); copy.allowedActions = []; }
+            }
+            if (!Array.isArray(copy.allowedActions)) copy.allowedActions = [];
+
+            // Parse triggerWords from comma-separated string
+            if (typeof copy.triggerWords === 'string') {
+                copy.triggerWords = copy.triggerWords.split(',').map((w) => w.trim()).filter(Boolean);
+            }
+            if (!Array.isArray(copy.triggerWords)) copy.triggerWords = [];
+
+            // Ensure maxContextStates is a number
+            if (copy.maxContextStates) copy.maxContextStates = Number(copy.maxContextStates) || 50;
+
+            return copy;
+        });
+    }
 
     async _createStates() {
         const states = {

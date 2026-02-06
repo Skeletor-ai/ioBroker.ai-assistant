@@ -30,6 +30,8 @@
   "ollamaUrlHelp": "URL des lokalen Ollama-Servers",
   "ollamaModel": "Ollama Modell",
   "ollamaModelHelp": "Name des Ollama-Modells (z.B. phi3:mini, llama3, mistral)",
+  "ollamaNoThink": "Denkmodus deaktivieren",
+  "ollamaNoThinkHelp": "Bei Modellen mit Reasoning/Thinking (z.B. Qwen3) den Denkmodus abschalten. Sendet /no_think Tag um schnellere und direktere Antworten zu erhalten.",
   "openaiApiKey": "OpenAI API-Key",
   "openaiApiKeyHelp": "Ihr OpenAI API-Schlüssel (beginnt mit sk-...)",
   "openaiModel": "OpenAI Modell",
@@ -50,15 +52,24 @@
   "testLlm": "LLM-Verbindung testen",
 
   "headerTemplates": "Vorlagen-Konfiguration",
-  "templateInfo": "Vorlagen definieren, wie der Assistent auf bestimmte Spracheingaben reagiert. Jede Vorlage hat Trigger-Wörter, einen System-Prompt und erlaubte Aktionen. Kontext-Quellen und erlaubte Aktionen werden als kommagetrennte ioBroker-Zustandsmuster angegeben (z.B. 'hm-rpc.0.*.TEMPERATURE' für alle Temperatursensoren).",
+  "templateInfo": "Vorlagen definieren, wie der Assistent auf bestimmte Spracheingaben reagiert. Jede Vorlage hat Trigger-Wörter, einen System-Prompt, Kontext-Quellen und erlaubte Aktionen.",
   "templates": "Vorlagen",
   "templateId": "ID",
   "templateName": "Name",
+  "templateDescription": "Beschreibung",
   "templateTriggerWords": "Trigger-Wörter (kommagetrennt)",
   "templateSystemPrompt": "System-Prompt",
-  "templateResponseFormat": "Antwortformat",
-  "templateMaxContextStates": "Max. Kontext-Zustände",
+  "templateContextSources": "Kontext-Quellen (JSON)",
+  "templateAllowedActions": "Erlaubte Aktionen (JSON)",
+  "templateResponseFormat": "Format",
+  "templateMaxContextStates": "Max. States",
 
-  "headerAdvanced": "Hinweise zur erweiterten Konfiguration",
-  "advancedInfo": "Für Kontext-Quellen (contextSources) und erlaubte Aktionen (allowedActions) können Sie in den Vorlagen-Objekten direkt im JSON-Format Unter-Tabellen mit 'pattern' und 'label' Feldern definieren. Beispiel: [{\"pattern\": \"hm-rpc.0.*.TEMPERATURE\", \"label\": \"Temperaturen\"}]. Diese erweiterten Felder können über die Datei-Konfiguration oder das JSON-Objekt bearbeitet werden."
+  "contextSourcesHelp": "**Kontext-Quellen** und **Erlaubte Aktionen** werden als JSON-Arrays angegeben.\n\n**Kontext-Quellen:** `[{\"pattern\": \"hm-rpc.0.*.TEMPERATURE\", \"label\": \"Temperaturen\"}]`\nOptional mit `\"role\"` für Filterung nach State-Rolle.\n\n**Erlaubte Aktionen:** `[{\"pattern\": \"hm-rpc.0.*.SET_POINT_TEMPERATURE\", \"label\": \"Sollwert setzen\"}]`\n\nWildcard `*` matcht ein Pfadsegment. Verwenden Sie `{context}` im System-Prompt als Platzhalter für die geladenen Daten.",
+
+  "headerImportExport": "Import / Export",
+  "importExportInfo": "Vorlagen als JSON exportieren oder importieren. Beim Import werden bestehende Vorlagen mit gleicher ID überschrieben.",
+  "exportTemplates": "Vorlagen exportieren",
+  "importTemplates": "Vorlagen importieren",
+  "templateJsonField": "JSON Import/Export",
+  "templateJsonFieldHelp": "Hier JSON einfügen zum Importieren oder Export-Ergebnis kopieren"
 }

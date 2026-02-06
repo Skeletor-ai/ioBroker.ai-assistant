@@ -42,6 +42,7 @@
     "llmBackend": "ollama",
     "ollamaUrl": "http://localhost:11434",
     "ollamaModel": "qwen3-vl:4b",
+    "ollamaNoThink": false,
     "ollamaToolModel": "",
     "openaiApiKey": "",
     "openaiModel": "gpt-4o-mini",

@@ -30,6 +30,8 @@
   "ollamaUrlHelp": "URL of the local Ollama server",
   "ollamaModel": "Ollama Model",
   "ollamaModelHelp": "Ollama model name (e.g. phi3:mini, llama3, mistral)",
+  "ollamaNoThink": "Disable thinking mode",
+  "ollamaNoThinkHelp": "For models with reasoning/thinking (e.g. Qwen3), disable thinking mode. Sends /no_think tag for faster and more direct responses.",
   "openaiApiKey": "OpenAI API Key",
   "openaiApiKeyHelp": "Your OpenAI API key (starts with sk-...)",
   "openaiModel": "OpenAI Model",
@@ -50,15 +52,24 @@
   "testLlm": "Test LLM Connection",
 
   "headerTemplates": "Template Configuration",
-  "templateInfo": "Templates define how the assistant responds to specific voice inputs. Each template has trigger words, a system prompt, and allowed actions. Context sources and allowed actions are specified as comma-separated ioBroker state patterns (e.g. 'hm-rpc.0.*.TEMPERATURE' for all temperature sensors).",
+  "templateInfo": "Templates define how the assistant responds to specific voice inputs. Each template has trigger words, a system prompt, context sources, and allowed actions.",
   "templates": "Templates",
   "templateId": "ID",
   "templateName": "Name",
+  "templateDescription": "Description",
   "templateTriggerWords": "Trigger Words (comma-separated)",
   "templateSystemPrompt": "System Prompt",
-  "templateResponseFormat": "Response Format",
-  "templateMaxContextStates": "Max Context States",
+  "templateContextSources": "Context Sources (JSON)",
+  "templateAllowedActions": "Allowed Actions (JSON)",
+  "templateResponseFormat": "Format",
+  "templateMaxContextStates": "Max States",
 
-  "headerAdvanced": "Advanced Configuration Notes",
-  "advancedInfo": "For context sources (contextSources) and allowed actions (allowedActions), you can define sub-tables with 'pattern' and 'label' fields directly in JSON format within the template objects. Example: [{\"pattern\": \"hm-rpc.0.*.TEMPERATURE\", \"label\": \"Temperatures\"}]. These advanced fields can be edited via file configuration or the JSON object."
+  "contextSourcesHelp": "**Context Sources** and **Allowed Actions** are specified as JSON arrays.\n\n**Context Sources:** `[{\"pattern\": \"hm-rpc.0.*.TEMPERATURE\", \"label\": \"Temperatures\"}]`\nOptionally with `\"role\"` for state role filtering.\n\n**Allowed Actions:** `[{\"pattern\": \"hm-rpc.0.*.SET_POINT_TEMPERATURE\", \"label\": \"Set target temp\"}]`\n\nWildcard `*` matches one path segment. Use `{context}` in the system prompt as placeholder for loaded data.",
+
+  "headerImportExport": "Import / Export",
+  "importExportInfo": "Export or import templates as JSON. On import, existing templates with the same ID are overwritten.",
+  "exportTemplates": "Export Templates",
+  "importTemplates": "Import Templates",
+  "templateJsonField": "JSON Import/Export",
+  "templateJsonFieldHelp": "Paste JSON here to import or copy export result"
 }

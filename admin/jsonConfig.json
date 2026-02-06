@@ -89,7 +89,7 @@
           "label": "testWhisper",
           "command": "testWhisper",
           "variant": "outlined",
-          "icon": "mic",
+          "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJjdXJyZW50Q29sb3IiPjxwYXRoIGQ9Ik0xMiAxNGMxLjY2IDAgMi45OS0xLjM0IDIuOTktM0wxNSA1YzAtMS42Ni0xLjM0LTMtMy0zUzkgMy4zNCA5IDV2NmMwIDEuNjYgMS4zNCAzIDMgM3ptNS4zLTNjMCAzLTIuNTQgNS4xLTUuMyA1LjFTNi43IDE0IDYuNyAxMUg1YzAgMy40MSAyLjcyIDYuMjMgNiA2LjcyVjIxaDJ2LTMuMjhjMy4yOC0uNDggNi0zLjMgNi02LjcyaC0xLjd6Ii8+PC9zdmc+",
           "jsonData": "{}",
           "sm": 6
         }
@@ -133,6 +133,14 @@
           "label": "ollamaModel",
           "help": "ollamaModelHelp",
           "default": "qwen3-vl:4b",
+          "hidden": "data.llmBackend !== 'ollama'",
+          "sm": 6
+        },
+        "ollamaNoThink": {
+          "type": "checkbox",
+          "label": "ollamaNoThink",
+          "help": "ollamaNoThinkHelp",
+          "default": false,
           "hidden": "data.llmBackend !== 'ollama'",
           "sm": 6
         },
@@ -221,7 +229,7 @@
           "label": "testLlm",
           "command": "testLlm",
           "variant": "outlined",
-          "icon": "cloud",
+          "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJjdXJyZW50Q29sb3IiPjxwYXRoIGQ9Ik0yMS41IDE0LjVsLTItMi41aC0xLjIxbC0uODEgMS4wMUwxOS41IDE1SDIxdjQuNUgzVjE1aDEuNWwyLjAyLTIuNTEtLjgxLS45OUgzLjVsLTIgMi41SDAgVjIwaDI0di01LjVoLTIuNXpNMTkuNSAxNy41YTEgMSAwIDEgMCAwLTIgMSAxIDAgMCAwIDAgMnpNMTIgMmMtNC45NyAwLTkgMi42OS05IDZzNC4wMyA2IDkgNmM0Ljk3IDAgOS0yLjY5IDktNnMtNC4wMy02LTktNnptMCAxMGMtMy44NiAwLTctMi4wMS03LTQuNVM4LjE0IDMgMTIgM3M3IDIuMDEgNyA0LjVTMTUuODYgMTIgMTIgMTJ6Ii8+PC9zdmc+",
           "jsonData": "{}",
           "sm": 6
         }
@@ -249,7 +257,7 @@
               "type": "text",
               "attr": "id",
               "title": "templateId",
-              "width": "10%",
+              "width": "8%",
               "filter": false,
               "sort": true,
               "default": ""
@@ -258,16 +266,24 @@
               "type": "text",
               "attr": "name",
               "title": "templateName",
-              "width": "15%",
+              "width": "12%",
               "filter": false,
               "sort": true,
               "default": ""
             },
             {
               "type": "text",
+              "attr": "description",
+              "title": "templateDescription",
+              "width": "12%",
+              "filter": false,
+              "default": ""
+            },
+            {
+              "type": "text",
               "attr": "triggerWords",
               "title": "templateTriggerWords",
-              "width": "15%",
+              "width": "12%",
               "filter": false,
               "default": ""
             },
@@ -275,7 +291,23 @@
               "type": "text",
               "attr": "systemPrompt",
               "title": "templateSystemPrompt",
-              "width": "25%",
+              "width": "18%",
+              "filter": false,
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "contextSources",
+              "title": "templateContextSources",
+              "width": "12%",
+              "filter": false,
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "allowedActions",
+              "title": "templateAllowedActions",
+              "width": "12%",
               "filter": false,
               "default": ""
             },
@@ -283,7 +315,7 @@
               "type": "select",
               "attr": "responseFormat",
               "title": "templateResponseFormat",
-              "width": "10%",
+              "width": "8%",
               "options": [
                 { "label": "Text", "value": "text" },
                 { "label": "JSON", "value": "json" },
@@ -295,24 +327,58 @@
               "type": "number",
               "attr": "maxContextStates",
               "title": "templateMaxContextStates",
-              "width": "10%",
+              "width": "6%",
               "default": 50
             }
           ],
           "sm": 12
         },
-        "_dividerAdvanced": {
+        "_dividerFormat": {
           "type": "divider"
         },
-        "_headerAdvanced": {
+        "_contextHelp": {
+          "type": "staticText",
+          "text": "contextSourcesHelp",
+          "sm": 12
+        },
+        "_dividerImportExport": {
+          "type": "divider"
+        },
+        "_headerImportExport": {
           "type": "header",
-          "text": "headerAdvanced",
+          "text": "headerImportExport",
           "size": 4
         },
-        "_advancedInfo": {
+        "_importExportInfo": {
           "type": "staticText",
-          "text": "advancedInfo",
+          "text": "importExportInfo",
           "sm": 12
+        },
+        "_exportTemplates": {
+          "type": "sendTo",
+          "label": "exportTemplates",
+          "command": "exportTemplates",
+          "variant": "outlined",
+          "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJjdXJyZW50Q29sb3IiPjxwYXRoIGQ9Ik0xOSAxMnYzSDVWMTJIM3Y1YTIgMiAwIDAgMCAyIDJoMTRhMiAyIDAgMCAwIDItMnYtNWgtMnptLTUtLjdjMCAuNDUuNTQuNjcuODUuNDVsMy43OS0zLjc5LTEuNDEtMS40MUwxNSA5LjYxVjNoLTJ2Ni42MWwtMi4yMy0yLjIzLTEuNDEgMS40MSAzLjc5IDMuNzljLjMxLjMxLjg1LjA5Ljg1LS40NXoiLz48L3N2Zz4=",
+          "jsonData": "{}",
+          "sm": 3
+        },
+        "_templateJson": {
+          "type": "text",
+          "label": "templateJsonField",
+          "help": "templateJsonFieldHelp",
+          "default": "",
+          "sm": 12,
+          "newLine": true
+        },
+        "_importTemplates": {
+          "type": "sendTo",
+          "label": "importTemplates",
+          "command": "importTemplates",
+          "variant": "contained",
+          "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJjdXJyZW50Q29sb3IiPjxwYXRoIGQ9Ik01IDEwaDR2NmgyVjEwaDRsLTUtNS01IDV6bTAtNGgxNFYzSDV2M3oiLz48L3N2Zz4=",
+          "jsonData": "{\"json\": \"${data._templateJson}\"}",
+          "sm": 3
         }
       }
     }
