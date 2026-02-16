@@ -201,21 +201,30 @@ class AiAssistant extends utils.Adapter {
     async _processAudio(audioBuffer, format, deviceId) {
         const startTime = Date.now();
 
-        // Step 1: Transcribe
-        if (!this.whisper) throw new Error('Whisper not available');
-        const transcription = await this.whisper.transcribe(audioBuffer, format);
+        let text;
 
-        if (!transcription.text) {
+        if (format === '_text') {
+            // Pre-transcribed text from on-device STT (e.g. Kalima app with sherpa-onnx)
+            text = audioBuffer.toString('utf-8').trim();
+            this.log.info(`[${deviceId}] Received pre-transcribed text: "${text}"`);
+        } else {
+            // Step 1: Transcribe audio
+            if (!this.whisper) throw new Error('Whisper not available');
+            const transcription = await this.whisper.transcribe(audioBuffer, format);
+            text = transcription.text;
+        }
+
+        if (!text) {
             return { step: 'transcription', text: '', response: '(Kein Text erkannt)' };
         }
 
-        await this.setStateAsync('lastTranscription', transcription.text, true);
+        await this.setStateAsync('lastTranscription', text, true);
         await this.setStateAsync('lastDevice', deviceId, true);
-        this.log.info(`[${deviceId}] Transcribed: "${transcription.text}"`);
+        this.log.info(`[${deviceId}] Transcribed: "${text}"`);
 
         // Step 2: Process text through LLM pipeline
-        const result = await this._processText(transcription.text);
-        result.transcription = transcription.text;
+        const result = await this._processText(text);
+        result.transcription = text;
         result.device = deviceId;
         result.processingTimeMs = Date.now() - startTime;
 
