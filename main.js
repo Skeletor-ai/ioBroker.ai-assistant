@@ -405,25 +405,40 @@ class AiAssistant extends utils.Adapter {
 
                 const stateType = obj.common?.type;
                 const role = obj.common?.role || '';
+                const isSwitch = role.includes('switch') || (stateType === 'boolean' && !role.includes('level'));
+                const isLevel = role.includes('level') || role.includes('dimmer');
                 let value;
 
                 switch (intent.action) {
                     case 'set_on':
-                        if (stateType === 'boolean') value = true;
-                        else if (stateType === 'number') {
-                            // Dimmer/level → 100, otherwise 1
-                            value = role.includes('level') || role.includes('dimmer') ? 100 : 1;
+                        // On/Off: only use switch roles (boolean on/off states)
+                        // Skip level states — the switch controls them implicitly
+                        if (!isSwitch && isLevel) {
+                            this.log.debug(`Fast-path: skipping level state ${stateId} for set_on (use switch)`);
+                            continue;
                         }
+                        if (stateType === 'boolean') value = true;
+                        else if (stateType === 'number') value = 1;
                         else value = true;
                         break;
 
                     case 'set_off':
+                        // Same logic: only switch roles for on/off
+                        if (!isSwitch && isLevel) {
+                            this.log.debug(`Fast-path: skipping level state ${stateId} for set_off (use switch)`);
+                            continue;
+                        }
                         if (stateType === 'boolean') value = false;
                         else if (stateType === 'number') value = 0;
                         else value = false;
                         break;
 
                     case 'set_value':
+                        // Dimming: only use level roles
+                        if (!isLevel && isSwitch) {
+                            this.log.debug(`Fast-path: skipping switch state ${stateId} for set_value (use level)`);
+                            continue;
+                        }
                         if (intent.value === null) continue;
                         value = intent.value;
                         if (stateType === 'number') value = Number(value);
@@ -431,6 +446,8 @@ class AiAssistant extends utils.Adapter {
                         break;
 
                     case 'increase': {
+                        // Dimming: only use level roles
+                        if (!isLevel) continue;
                         const current = await this.getForeignStateAsync(stateId);
                         if (!current || stateType !== 'number') continue;
                         const step = role.includes('temperature') ? 1 : 10;
@@ -440,6 +457,8 @@ class AiAssistant extends utils.Adapter {
                     }
 
                     case 'decrease': {
+                        // Dimming: only use level roles
+                        if (!isLevel) continue;
                         const current = await this.getForeignStateAsync(stateId);
                         if (!current || stateType !== 'number') continue;
                         const step = role.includes('temperature') ? 1 : 10;
