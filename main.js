@@ -4,7 +4,7 @@ const utils = require('@iobroker/adapter-core');
 const WhisperTranscriber = require('./lib/whisperTranscriber');
 const LlmBackend = require('./lib/llmBackend');
 const RagClient = require('./lib/ragClient');
-const RagManager = require('./lib/ragManager');
+const RagEngine = require('./lib/ragEngine');
 const TemplateEngine = require('./lib/templateEngine');
 const ActionExecutor = require('./lib/actionExecutor');
 const AudioServer = require('./lib/audioServer');
@@ -19,7 +19,7 @@ class AiAssistant extends utils.Adapter {
         this.whisper = null;
         this.llm = null;
         this.rag = null;
-        this.ragManager = null;
+        this.ragEngine = null;
         this.templateEngine = null;
         this.enumResolver = null;
         this.intentParser = null;
@@ -66,16 +66,32 @@ class AiAssistant extends utils.Adapter {
 
         // ── RAG (Retrieval Augmented Generation) ─────────────────────
         if (cfg.ragEnabled) {
+            const ragMode = cfg.ragMode || 'embedded'; // 'embedded' (Node.js) or 'external' (HTTP)
             const ragPort = cfg.ragPort || 8321;
-            const ragManaged = cfg.ragManaged === true; // default: false (external RAG server)
             const ragUrl = cfg.ragUrl || `http://127.0.0.1:${ragPort}`;
             let ragOk = false;
 
-            if (ragManaged) {
-                // Adapter starts and manages its own RAG server process
-                this.ragManager = new RagManager({
+            if (ragMode === 'external') {
+                // External RAG server — use HTTP client
+                this.log.info(`RAG: Connecting to external service at ${ragUrl}`);
+                await this.setStateAsync('info.ragStatus', 'external', true);
+
+                this.rag = new RagClient({
+                    log: this.log,
+                    url: ragUrl,
+                    topK: cfg.ragTopK || 5,
+                    language: cfg.ragLanguage || '',
+                    timeoutMs: cfg.ragTimeoutMs || 5000,
+                });
+
+                ragOk = await this.rag.ping();
+            } else {
+                // Embedded Node.js RAG engine (default)
+                this.ragEngine = new RagEngine({
                     log: this.log,
                     port: ragPort,
+                    topK: cfg.ragTopK || 5,
+                    language: cfg.ragLanguage || '',
                     onStatusChange: async (status) => {
                         this.log.info(`RAG status: ${status}`);
                         try {
@@ -85,22 +101,11 @@ class AiAssistant extends utils.Adapter {
                     },
                 });
 
-                ragOk = await this.ragManager.start();
-            } else {
-                // External RAG server — just connect to it
-                this.log.info(`RAG: Connecting to external service at ${ragUrl}`);
-                await this.setStateAsync('info.ragStatus', 'external', true);
+                ragOk = await this.ragEngine.start();
+                // Use ragEngine as the rag interface (same API: query, enrichPrompt, ping, available)
+                this.rag = this.ragEngine;
             }
 
-            this.rag = new RagClient({
-                log: this.log,
-                url: ragManaged && this.ragManager ? this.ragManager.url : ragUrl,
-                topK: cfg.ragTopK || 5,
-                language: cfg.ragLanguage || '',
-                timeoutMs: cfg.ragTimeoutMs || 5000,
-            });
-
-            ragOk = await this.rag.ping();
             await this.setStateAsync('info.ragAvailable', ragOk, true);
         } else {
             await this.setStateAsync('info.ragAvailable', false, true);
@@ -174,7 +179,7 @@ class AiAssistant extends utils.Adapter {
 
     async onUnload(callback) {
         try {
-            if (this.ragManager) await this.ragManager.stop();
+            if (this.ragEngine) await this.ragEngine.stop();
             if (this.audioServer) await this.audioServer.stop();
             if (this.whisper) this.whisper.destroy();
             await this.setStateAsync('info.connection', false, true);
@@ -768,13 +773,16 @@ ${stateContext}
             }
             case 'reindexRag': {
                 try {
-                    if (!this.ragManager) {
+                    if (!this.ragEngine && !this.rag) {
                         this.sendTo(msg.from, msg.command, { error: 'RAG nicht aktiviert' }, msg.callback);
                         break;
                     }
-                    const stats = await this.ragManager.reindex();
-                    // Reconnect RAG client after reindex
-                    if (this.rag) await this.rag.ping();
+                    const ragInstance = this.ragEngine || this.rag;
+                    if (!ragInstance.reindex) {
+                        this.sendTo(msg.from, msg.command, { error: 'Reindex nur im embedded Modus verfügbar' }, msg.callback);
+                        break;
+                    }
+                    const stats = await ragInstance.reindex();
                     this.sendTo(msg.from, msg.command, {
                         result: 'Re-Indexierung abgeschlossen',
                         stats,

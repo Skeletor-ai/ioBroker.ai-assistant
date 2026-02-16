@@ -2,3 +2,4 @@
 
 # ioBroker dev-server
 .dev-server/
+node_modules/
