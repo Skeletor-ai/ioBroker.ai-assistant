@@ -38,6 +38,18 @@
       "linux": [
         "ffmpeg"
       ]
+    },
+    "plugins": {
+      "mdns": {
+        "enabled": true,
+        "serviceType": "iobroker-ai",
+        "portKey": "audioPort",
+        "defaultPort": 8089,
+        "txt": {
+          "path": "/audio",
+          "version": "1"
+        }
+      }
     }
   },
   "native": {
