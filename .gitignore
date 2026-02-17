@@ -5,3 +5,5 @@
 node_modules/
 
 rag/data/
+whisper-models/
+rag/legacy/__pycache__/
