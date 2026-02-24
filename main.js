@@ -277,9 +277,11 @@ class AiAssistant extends utils.Adapter {
         }
 
         // Step 2: Match template
+        this.log.debug(`Step 2: Matching template for "${userText}" (${this.templateEngine.getTemplates().length} templates loaded)`);
         const template = this.templateEngine.matchTemplate(userText);
 
         if (!template) {
+            this.log.info(`No template matched for "${userText}"`);
             // No template matched — use generic response with RAG context
             let systemPrompt = 'Du bist ein Smart-Home-Assistent. Antworte kurz und hilfreich auf Deutsch.';
 
