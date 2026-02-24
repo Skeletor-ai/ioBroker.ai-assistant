@@ -308,10 +308,16 @@ class AiAssistant extends utils.Adapter {
 
         // Step 3: Build context-enriched prompt (template + RAG)
         let systemPrompt = await this.templateEngine.buildSystemPrompt(template);
+        this.log.debug(`System prompt length: ${systemPrompt.length} chars`);
+        // Log first 500 chars of context for debugging
+        const contextStart = systemPrompt.indexOf('### ');
+        if (contextStart > 0) {
+            this.log.debug(`Context preview: ${systemPrompt.substring(contextStart, contextStart + 500)}`);
+        }
 
         if (this.rag && this.rag.available) {
             systemPrompt = await this.rag.enrichPrompt(systemPrompt, userText);
-            this.log.debug('RAG context injected into template prompt');
+            this.log.debug(`RAG context injected into template prompt (total: ${systemPrompt.length} chars)`);
         }
 
         // ── Tool Calling Mode ────────────────────────────────────────
